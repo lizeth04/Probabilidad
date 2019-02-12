@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>medidas-tendencia-central</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-rc.2/css/materialize.min.css">
+  <!-- production version, optimized for size and speed -->
+  <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+</head>
+
+<body>
+  <div id="app">
+    <div class="container">
+      <h3 class="center">Probabilidad y Estadística</h3>
+      <h3 class="center">{{title}}</h3>
+      <div class="row">
+        <div class="col s12">
+          <ul id="tabs" class="tabs ">
+            <li class="tab col s3">
+              <a href="#swipe-1" @click="title = 'Ingresar Datos'">Ingresar Datos</a>
+            </li>
+            <li class="tab col s3">
+              <a href="#swipe-2" @click="title = 'Tabla de Inferencia'">Tabla de Inferencia</a>
+            </li>
+            <li class="tab col s3">
+              <a href="#swipe-3" @click="title = 'Medidas de Centralización'">Medidas de Centralización</a>
+            </li>
+            <li class="tab col s3">
+              <a href="#swipe-4" @click="title = 'Gráfica'">Gráfica</a>
+            </li>
+          </ul>
+
+        </div>
+        <div id="swipe-1" class="col s12">
+          <form @submit.prevent="generateTable">
+            <div class="row">
+              <div class="col s4">
+                <p>Numero de datos</p>
+              </div>
+              <div class="col s4">
+                <input type="number" min="1" step="1" v-model="numData">
+              </div>
+              <div class="col s4">
+                <button class="btn waves-effect waves-light" type="submit">Crear Tabla</button>
+              </div>
+            </div>
+          </form>
+          <form id="dataTable" @submit.prevent="getDataTable" class="row">
+            <table id="set-table">
+              <!-- Aqui van los inputs generados -->
+            </table>
+            <div class="center" v-if="generatedTable">
+              <button class="btn waves-effect waves-light" type="submit" name="action">
+                Generar Medidas
+                <i class="material-icons right">insert_chart</i>
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div id="swipe-2" class="col s12">
+          <div v-show="init">
+            <div class="row">
+              <table class="col s12 responsive-table">
+                <thead>
+                  <tr>
+                    <th>Clases</th>
+                    <th>fa</th>
+                    <th>faA</th>
+                    <th>fr</th>
+                    <th>frA</th>
+                    <th>fi</th>
+                    <th>fa * fi</th>
+                    <th>fa * log(fi)</th>
+                    <th>fa / fi</th>
+                    <th>fi
+                      <sup>2</sup> * fa</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(num, index) of clases" :key="index">
+                    <td>{{num.min}} - {{num.max}}</td>
+                    <td>{{fa[index]}}</td>
+                    <td>{{faA[index]}}</td>
+                    <td>{{fr[index]}}</td>
+                    <td>{{frA[index]}}</td>
+                    <td>{{fi[index]}}</td>
+                    <td>{{fa_x_fi[index]}}</td>
+                    <td>{{fa_log_fi[index]}}</td>
+                    <td>{{fa_d_fi[index]}}</td>
+                    <td>{{fi_2_x_fa[index]}}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="row">
+              <ul class="collapsible expandable popout">
+                <li class="active">
+                  <div class="collapsible-header">Calculo del Rango</div>
+                  <div class="collapsible-body">
+                    <p>R = Max - min </p>
+                    <p>R = {{max}} - {{min}} = {{r}} </p>
+                  </div>
+                </li>
+                <li class="active">
+                  <div class="collapsible-header">Calculo de Clase</div>
+                  <div class="collapsible-body">
+                    <p>K = √N </p>
+                    <p>K = √{{n}} = {{k}} </p>
+                  </div>
+                </li>
+                <li class="active">
+                  <div class="collapsible-header">Calculo de la anchura de clase</div>
+                  <div class="collapsible-body">
+                    <p>Cj = R / K </p>
+                    <p>Cj = {{r}} / {{k}} = {{cj}} </p>
+                  </div>
+                </li>
+              </ul>
+
+            </div>
+          </div>
+        </div>
+
+        <div id="swipe-3" class="col s12">
+          <div v-if="init">
+            <div class="row">
+              <div class="col s12 m6">
+                <h4 class="center">Datos Agrupados</h4>
+                <div class="card">
+                  <div class="card-content">
+                    <h5 class="card-title">Media Promedio</h5>
+                    <!-- <p>X = Σ(fa * fi)) / N </p> -->
+                    <p>X = {{x_da}} </p>
+
+                  </div>
+                </div>
+                <div class="card">
+                  <div class="card-content">
+                    <h5 class="card-title">Media Geométrica</h5>
+                    <!-- <p>X = Σ(fa * log(fi))) / N </p> -->
+                    <p>Mg = {{mg_da}} </p>
+
+                  </div>
+                </div>
+                <div class="card">
+                  <div class="card-content">
+                    <h5 class="card-title">Media Armónica</h5>
+                    <!-- <p>X = Σ(fa * log(fi))) / N </p> -->
+                    <p>Ma = {{ma_da}} </p>
+
+                  </div>
+                </div>
+                <div class="card">
+                  <div class="card-content">
+                    <h5 class="card-title">Media Cuadrática</h5>
+                    <!-- <p>X = Σ(fa * log(fi))) / N </p> -->
+                    <p>Mc = {{mc_da}} </p>
+
+                  </div>
+                </div>
+                <div class="card">
+                  <div class="card-content">
+                    <h5 class="card-title">Desviación Media</h5>
+                    <!-- <p>X = Σ(fa * log(fi))) / N </p> -->
+                    <p>Dm = {{dm_da}} </p>
+
+                  </div>
+                </div>
+                <div class="card">
+                  <div class="card-content">
+                    <h5 class="card-title">Mediana</h5>
+                    <!-- <p>X = Σ(fa * log(fi))) / N </p> -->
+                    <p>Md = {{md_da}} </p>
+
+                  </div>
+                </div>
+                <div class="card">
+                  <div class="card-content">
+                    <h5 class="card-title">Moda</h5>
+                    <!-- <p>X = Σ(fa * log(fi))) / N </p> -->
+                    <p>Moda = {{moda_da}} </p>
+
+                  </div>
+                </div>
+
+              </div>
+              <div class="col s12 m6">
+                <h4 class="center">Datos No Agrupados</h4>
+                <div class="card">
+                  <div class="card-content">
+                    <h5 class="card-title">Media Promedio</h5>
+                    <!-- <p>X = Σ(fa * fi)) / N </p> -->
+                    <p>X = {{x_dna}} </p>
+                  </div>
+                </div>
+                <div class="card">
+                  <div class="card-content">
+                    <h5 class="card-title">Media Geométrica</h5>
+                    <!-- <p>X = Σ(fa * log(fi))) / N </p> -->
+                    <p>Mg = {{mg_dna}} </p>
+                  </div>
+                </div>
+                <div class="card">
+                  <div class="card-content">
+                    <h5 class="card-title">Media Armónica</h5>
+                    <!-- <p>X = Σ(fa * log(fi))) / N </p> -->
+                    <p>Ma = {{ma_dna}} </p>
+                  </div>
+                </div>
+                <div class="card">
+                  <div class="card-content">
+                    <h5 class="card-title">Media Cuadrática</h5>
+                    <!-- <p>X = Σ(fa * log(fi))) / N </p> -->
+                    <p>Mc = {{mc_dna}} </p>
+                  </div>
+                </div>
+                <div class="card">
+                  <div class="card-content">
+                    <h5 class="card-title">Desviación Media</h5>
+                    <!-- <p>X = Σ(fa * log(fi))) / N </p> -->
+                    <p>Dm = {{dm_dna}} </p>
+                  </div>
+                </div>
+                <div class="card">
+                  <div class="card-content">
+                    <h5 class="card-title">Mediana</h5>
+                    <!-- <p>X = Σ(fa * log(fi))) / N </p> -->
+                    <p>Md = {{md_dna}} </p>
+                  </div>
+                </div>
+                <div class="card">
+                  <div class="card-content">
+                    <h5 class="card-title">Moda</h5>
+                    <!-- <p>X = Σ(fa * log(fi))) / N </p> -->
+                    <p>Moda = {{moda_dna}} {{typeModal(moda_dna)}} </p>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+            <div class="row">
+              <div class="col s12">
+                <h3 class="center">Medidas Centrales Adicionales</h3>
+                <form @submit.prevent="medidasAdicionales">
+                  <div class="input-field col s12 m3">
+                    <input id="data_q" type="number" class="validate" min="1" max="3" step="1" v-model="data_q">
+                    <label for="data_q">Cuartiles</label>
+                  </div>
+                  <div class="input-field col s12 m3">
+                    <input id="data_d" type="number" class="validate" min="1" max="9" step="1" v-model="data_d">
+                    <label for="data_d">Deciles</label>
+                  </div>
+                  <div class="input-field col s12 m3">
+                    <input id="data_p" type="number" class="validate" min="1" max="99" step="1" v-model="data_p">
+                    <label for="data_p">Percentiles</label>
+                  </div>
+                  <div class="col s12 m3">
+                    <button class="btn waves-effect waves-light" type="submit" name="action">
+                      Calcular
+                    </button>
+                  </div>
+                </form>
+              </div>
+              <div v-show="setDataAdicionales">
+                <div class="col s12 m6">
+                  <h4 class="center">Datos Agrupados</h4>
+
+                  <div class="card">
+                    <div class="card-content">
+                      <h5 class="card-title">Cuartiles</h5>
+                      <!-- <p>X = Σ(fa * log(fi))) / N </p> -->
+                      <p>Q
+                        <sub>{{data_q}}</sub> = {{q_da}} </p>
+                    </div>
+                  </div>
+
+                  <div class="card">
+                    <div class="card-content">
+                      <h5 class="card-title">Deciles</h5>
+                      <!-- <p>X = Σ(fa * log(fi))) / N </p> -->
+                      <p>D
+                        <sub>{{data_d}}</sub> = {{d_da}} </p>
+                    </div>
+                  </div>
+
+                  <div class="card">
+                    <div class="card-content">
+                      <h5 class="card-title">Percentiles</h5>
+                      <!-- <p>X = Σ(fa * log(fi))) / N </p> -->
+                      <p>P
+                        <sub>{{data_p}}</sub> = {{p_da}} </p>
+                    </div>
+                  </div>
+
+                </div>
+                <div class="col s12 m6">
+                  <h4 class="center">Datos No Agrupados</h4>
+
+                  <div class="card">
+                    <div class="card-content">
+                      <h5 class="card-title">Cuartiles</h5>
+                      <!-- <p>X = Σ(fa * log(fi))) / N </p> -->
+                      <p>Q
+                        <sub>{{data_q}}</sub> = {{q_dna}} (Posición)</p>
+                      <p>Q
+                        <sub>{{data_q}}</sub> = {{q_data}} </p>
+                    </div>
+                  </div>
+
+                  <div class="card">
+                    <div class="card-content">
+                      <h5 class="card-title">Deciles</h5>
+                      <!-- <p>X = Σ(fa * log(fi))) / N </p> -->
+                      <p>D
+                        <sub>{{data_d}}</sub> = {{d_dna}} (Posición)</p>
+                      <p>D
+                        <sub>{{data_d}}</sub> = {{d_data}} </p>
+                    </div>
+                  </div>
+
+                  <div class="card">
+                    <div class="card-content">
+                      <h5 class="card-title">Percentiles</h5>
+                      <!-- <p>X = Σ(fa * log(fi))) / N </p> -->
+                      <p>P
+                        <sub>{{data_p}}</sub> = {{p_dna}} (Posición)</p>
+                      <p>P
+                        <sub>{{data_p}}</sub> = {{p_data}} </p>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="swipe-4" class="col s12">
+          <div v-show="init">
+            <div class="row">
+              <div class="col s12 m6">
+                <h5 class="center">Curva de Frecuencia Relativa</h5>
+                <div class="chart-container" style="position: relative; min-height:30vh; max-height:50vh; width: auto">
+                  <canvas id="curvaRelativa"></canvas>
+                </div>
+              </div>
+              <div class="col s12 m6">
+                <h5 class="center">Curva de Frecuencia Absoluta</h5>
+                <div class="chart-container" style="position: relative; min-height:30vh; max-height:50vh; width:auto">
+                  <canvas id="curvaAbsoluta"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col s12">
+                <h5 class="center">Pastel</h5>
+                <div class="chart-container" style="position: relative; min-height:30vh; max-height:50vh; width:80vw">
+                  <canvas id="pastel"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-rc.2/js/materialize.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js"></script>
+  <script src="js/MedidasCentralizacion.js"></script>
+  <script src="js/Graficos.js"></script>
+  <script>
+    var app = new Vue({
+  el: '#app',
+  data: {
+        title: "Medidas de Tendencia Central",
+        init: false,
+        generatedTable: false,
+        setDataAdicionales: false,
+        data_q: 1,
+        data_d: 1,
+        data_p: 1,
+        numData: 40,
+        allData: [],
+        max: 65,
+        min: 30,
+        n: 40, // numero total de datos
+        r: 0, // rango
+        k: 0, // clase
+        cj: 0, // anchura de clase
+        clases: [],
+        fa: [], // Frecuencia Absoluta
+        faA: [], // Frecuencia Absoluta Acumulada
+        fr: [], // Frecuencia Relativa
+        frA: [], // Frecuencia Relativa Acumulada
+        fi: [], // Frecuencia Intermedia / punto medio
+        fa_x_fi: 0, // fa * fi
+        fa_log_fi: 0, // fa * log(fi)
+        fa_d_fi: 0, // fa / fi
+        fi_2_x_fa: 0, // fa^2 * fa,
+        // D.A
+        x_da: 0, // Media/Promedio
+        mg_da: 0, // Media Geométrica
+        ma_da: 0, // Media Armonica
+        mc_da: 0, // Media Cuadrática
+        dm_da: 0, // Desviación Media
+        md_da: 0, // Mediana
+        moda_da: 0, // Moda
+        // D.N.A
+        x_dna: 0, // Media/Promedio
+        mg_dna: 0, // Media Geométrica
+        ma_dna: 0, // Media Armonica
+        mc_dna: 0, // Media Cuadrática
+        dm_dna: 0, // Desviación Media
+        md_dna: 0, // Mediana
+        moda_dna: [], // Moda
+        // Adicionales
+        // D.A
+        q_da: 0, // Cuartiles
+        q_data: 0,
+        d_da: 0, // Deciles
+        d_data: 0,
+        p_da: 0, // Percentiles
+        p_data: 0,
+        // D.N.A
+        q_dna: 0, // Cuartiles
+        d_dna: 0, // Deciles
+        p_dna: 0, // Percentiles
+      },
+    methods: {
+      getDataTable() {
+        let allData = [];
+        const table = document
+          .getElementById("dataTable")
+          .querySelectorAll("#data");
+        for (const data of table) {
+          allData.push(parseInt(data.value));
+        }
+
+        const quickSort = ([x = [], ...xs]) => {
+          return x.length === 0 ? [] : [
+            ...quickSort(xs.filter(y => y <= x)),
+            x,
+            ...quickSort(xs.filter(y => y > x))
+          ];
+        };
+
+        this.allData = quickSort(allData);
+        this.min = this.allData[0];
+        this.max = this.allData[this.allData.length - 1];
+        this.initTable();
+        let instance = M.Tabs.init(document.getElementById("tabs"));
+        instance.select("swipe-2");
+        this.title = "Rango, Clase y Anchura de Clase";
+      },
+      generateRandomInterval() {
+        return Math.floor(Math.random() * (this.max - this.min + 1)) + this.min;
+      },
+      initTable() {
+        medidaCentralizacion = new MedidasCentralizacion(
+          this.allData,
+          this.n,
+          this.min,
+          this.max
+        );
+        this.init = true;
+        // calculos
+        this.r = medidaCentralizacion.calcR();
+        this.k = medidaCentralizacion.calcK();
+        this.cj = medidaCentralizacion.calcCj();
+        this.clases = medidaCentralizacion.calcClases();
+        this.fa = medidaCentralizacion.calcFa();
+        this.faA = medidaCentralizacion.calcFaA();
+        this.fr = medidaCentralizacion.calcFr();
+        this.frA = medidaCentralizacion.calcFrA();
+        this.fi = medidaCentralizacion.calcFi();
+        this.fa_x_fi = medidaCentralizacion.calcFa_x_fi();
+        this.fa_log_fi = medidaCentralizacion.calcFa_log_fi();
+        this.fa_d_fi = medidaCentralizacion.calcFa_d_fi();
+        this.fi_2_x_fa = medidaCentralizacion.calcFi_2_x_fa();
+        // D.A
+        this.x_da = medidaCentralizacion.calcX_DA();
+        this.mg_da = medidaCentralizacion.calcMg_DA();
+        this.ma_da = medidaCentralizacion.calcMa_DA();
+        this.mc_da = medidaCentralizacion.calcMc_DA();
+        this.dm_da = medidaCentralizacion.calcDm_DA();
+        this.md_da = medidaCentralizacion.calcMd_DA();
+        this.moda_da = medidaCentralizacion.calcModa_DA();
+        //D.N.A
+        this.x_dna = medidaCentralizacion.calcX_DNA();
+        this.mg_dna = medidaCentralizacion.calcMg_DNA();
+        this.ma_dna = medidaCentralizacion.calcMa_DNA();
+        this.mc_dna = medidaCentralizacion.calcMc_DNA();
+        this.dm_dna = medidaCentralizacion.calcDm_DNA();
+        this.md_dna = medidaCentralizacion.calcMd_DNA();
+        this.moda_dna = medidaCentralizacion.calcModa_DNA();
+        // Graficar
+        this.generateGraphics();
+      },
+      medidasAdicionales() {
+        this.data_q = parseInt(this.data_q);
+        this.data_d = parseInt(this.data_d);
+        this.data_p = parseInt(this.data_p);
+        // D.A
+        this.q_da = medidaCentralizacion.calcQ_DA(this.data_q);
+        this.d_da = medidaCentralizacion.calcD_DA(this.data_d);
+        this.p_da = medidaCentralizacion.calcP_DA(this.data_p);
+        // D.N.A
+        this.q_dna = medidaCentralizacion.calcQ_DNA(this.data_q);
+        this.q_data = medidaCentralizacion.getNumFromData(this.q_dna);
+        this.d_dna = medidaCentralizacion.calcD_DNA(this.data_d);
+        this.d_data = medidaCentralizacion.getNumFromData(this.d_dna);
+        this.p_dna = medidaCentralizacion.calcP_DNA(this.data_p);
+        this.p_data = medidaCentralizacion.getNumFromData(this.p_dna);
+        this.setDataAdicionales = true;
+      },
+      generateTable() {
+        let num_rows = Math.ceil(this.numData / 8);
+        let residuo = this.numData % 8;
+        let table = ``;
+        for (let i = 0; i < num_rows; i++) {
+          let condicion = 0;
+          if (i == num_rows - 1 && residuo != 0) {
+            condicion = residuo;
+          } else {
+            condicion = 8;
+          }
+
+          table += `<tr>`;
+
+          for (let j = 0; j < condicion; j++) {
+            table += `
+						<td>
+								<input type="number" min="0" step="1" id="data" required>
+						</td>
+						`;
+          }
+          table += `</tr>`;
+        }
+
+        document.getElementById("set-table").innerHTML = table;
+        this.generatedTable = true;
+      },
+      generateGraphics() {
+        let curvaRelativa = document.getElementById("curvaRelativa");
+        let graficoR = new Graficos(curvaRelativa, this.fa, this.clases, 'line');
+        let curvaAbsoluta = document.getElementById("curvaAbsoluta");
+        let graficoA = new Graficos(curvaAbsoluta, this.faA, this.clases, 'line');
+        let pastel = document.getElementById("pastel");
+        let graficoP = new Graficos(pastel, this.faA, this.clases, 'pie');
+      },
+      typeModal(modas) {
+        if (modas.length < 1) {
+          return '';
+        } else if (modas.length === 1) {
+          return '(Unimodal)';
+        } else if (modas.length === 2) {
+          return '(Bimodal)';
+        } else if (modas.length > 2) {
+          return '(Multimodal)';
+        }
+      }
+    },
+    mounted() {
+      let instance = M.Tabs.init(document.getElementById("tabs"));
+
+      // Acordion
+
+      let elem = document.querySelectorAll('.collapsible.expandable');
+      let instances = M.Collapsible.init(elem, {
+        accordion: false
+      });
+    }
+})
+  </script>
+</body>
+
+</html>
